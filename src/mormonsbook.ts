@@ -1,4 +1,4 @@
-export function parseMormonsBook(text: string) {
+export function mormonsBookParse(text: string) {
   console.log(text.length);
   let docs: any[] = [];
   let doc: any;
@@ -51,7 +51,7 @@ export function parseMormonsBook(text: string) {
   docs.forEach(doc => {
     console.log(doc.title, doc.paragraphs.length);
     if (doc.paragraphs.length < 10) {
-      doc.paragraphs.forEach((paragraph: string) => console.log(paragraph));
+      // doc.paragraphs.forEach((paragraph: string) => console.log(paragraph));
     }
   });
 }

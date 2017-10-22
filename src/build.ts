@@ -1,8 +1,8 @@
 import {readFileSync} from 'fs';
-import {parseGutenberg, parseMormonsBook} from './';
+import {epubParse, mormonsBookParse} from './';
 
-let gutenbergText = parseGutenberg(readFileSync('./notes/pg17.txt').toString());
-let mormonsBookText =
-  parseMormonsBook(readFileSync('./notes/BOM-mormonsbook.txt').toString());
+let ldsVolume = epubParse('./notes/book-of-mormon-eng.epub');
+let mormonsBookVolume =
+  mormonsBookParse(readFileSync('./notes/BOM-mormonsbook.txt').toString());
 
 // TODO Merge

@@ -1,2 +1,2 @@
-export * from './gutenberg';
+export * from './ldsepub';
 export * from './mormonsbook';

@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "Book of Mormon from mormonbook.org for Scripture Track",
   "devDependencies": {
+    "@types/cheerio": "^0.22.3",
     "@types/node": "^8.0.46",
+    "cheerio": "^1.0.0-rc.2",
     "epub": "^0.2.0",
     "http-server": "^0.10.0",
     "typescript": "^2.5.3"
