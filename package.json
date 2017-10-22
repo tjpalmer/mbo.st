@@ -1,7 +1,7 @@
 {
   "name": "mbo.st",
   "version": "0.0.1",
-  "description": "Book of Mormon from mormonbook.org Bible for Scripture Track",
+  "description": "Book of Mormon from mormonbook.org for Scripture Track",
   "devDependencies": {
     "@types/node": "^8.0.46",
     "epub": "^0.2.0",
