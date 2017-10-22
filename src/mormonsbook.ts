@@ -6,6 +6,7 @@ export function parseMormonsBook(text: string) {
   let paragraphs: string[] = [];
   let line: string;
   let endDoc = () => {
+    endPara();
     if (doc) {
       doc.paragraphs = paragraphs;
       docs.push(doc);
@@ -25,16 +26,25 @@ export function parseMormonsBook(text: string) {
     let indent = line.replace(/\S.*/, '').length;
     line = line.trim();
     if (!line) {
+      // Blank lines after each paragraph.
       endPara();
     }
     if (indent > 5 && indent + line.length < 70) {
+      // Such as: "                                First Nephi"
       endDoc();
     } else if (indent) {
+      // Such as: "   An account of Lehi and his wife Sariah, and his four ..."
       if (indent > 3) {
+        // Either a poetry line or a witness signature.
+        // Poetry example: "     Listen, O isles, unto me,"
+        // Signature: "...                                       Oliver Cowdery"
         endPara();
       }
+      // TODO Preprocess line.
       textLines.push(line);
     }
+    // If not indented, just context helper text.
+    // Such as: "Lehi prophesies and is cast out"
   }
   endDoc();
   console.log(docs.length);
