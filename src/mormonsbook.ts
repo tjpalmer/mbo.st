@@ -14,24 +14,34 @@ export function parseMormonsBook(text: string) {
     paragraphs = [];
     // console.log(indent + line.length, line);
   }
+  let endPara = () => {
+    let paraText = textLines.join(' ');
+    if (paraText) {
+      paragraphs.push(paraText);
+    }
+    textLines = [];
+  }
   for (line of text.split('\n')) {
     let indent = line.replace(/\S.*/, '').length;
     line = line.trim();
     if (!line) {
-      let paraText = textLines.join(' ');
-      if (paraText) {
-        paragraphs.push(paraText);
-      }
-      textLines = [];
+      endPara();
     }
     if (indent > 5 && indent + line.length < 70) {
       endDoc();
     } else if (indent) {
-      // TODO 3 for normal text, 5 for poem lines, much more for signatures.
+      if (indent > 3) {
+        endPara();
+      }
       textLines.push(line);
     }
   }
   endDoc();
   console.log(docs.length);
-  docs.forEach(doc => console.log(doc.title, doc.paragraphs.length));
+  docs.forEach(doc => {
+    console.log(doc.title, doc.paragraphs.length);
+    if (doc.paragraphs.length < 10) {
+      doc.paragraphs.forEach((paragraph: string) => console.log(paragraph));
+    }
+  });
 }
