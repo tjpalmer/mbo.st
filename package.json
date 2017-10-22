@@ -1,0 +1,15 @@
+{
+  "name": "mbo.st",
+  "version": "0.0.1",
+  "description": "Book of Mormon from mormonbook.org Bible for Scripture Track",
+  "devDependencies": {
+    "@types/node": "^8.0.46",
+    "epub": "^0.2.0",
+    "http-server": "^0.10.0",
+    "typescript": "^2.5.3"
+  },
+  "scripts": {
+    "start": "http-server ./docs --cors -d false -p 52120",
+    "watch": "tsc --watch"
+  }
+}
