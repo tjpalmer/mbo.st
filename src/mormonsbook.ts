@@ -1,17 +1,18 @@
-export function mormonsBookParse(text: string) {
-  console.log(text.length);
+export function mormonsBookParse(text: string): SimpleVolume {
+  // console.log(text.length);
   let docs: any[] = [];
-  let doc: any;
+  let doc: SimpleDoc;
   let textLines: string[] = [];
   let paragraphs: string[] = [];
   let line: string;
   let endDoc = () => {
     endPara();
-    if (doc) {
+    // Just the core books for now.
+    if (doc && !doc.title.match(/Testimony/)) {
       doc.paragraphs = paragraphs;
       docs.push(doc);
     }
-    doc = {title: line};
+    doc = {paragraphs: [], title: line};
     paragraphs = [];
     // console.log(indent + line.length, line);
   }
@@ -47,11 +48,21 @@ export function mormonsBookParse(text: string) {
     // Such as: "Lehi prophesies and is cast out"
   }
   endDoc();
-  console.log(docs.length);
+  // console.log(docs.length);
   docs.forEach(doc => {
     console.log(doc.title, doc.paragraphs.length);
     if (doc.paragraphs.length < 10) {
       // doc.paragraphs.forEach((paragraph: string) => console.log(paragraph));
     }
   });
+  return {docs};
+}
+
+export interface SimpleDoc {
+  paragraphs: string[];
+  title: string;
+}
+
+export interface SimpleVolume {
+  docs: SimpleDoc[];
 }
