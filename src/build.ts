@@ -8,6 +8,10 @@ interface Match {
   token: string;
 }
 
+interface ParaMatch extends Match {
+  paraIndex: number;
+}
+
 async function build() {
   let ldsVolume = await epubParse('./notes/book-of-mormon-eng.epub');
   let mormonsBookVolume =
@@ -16,38 +20,67 @@ async function build() {
   console.log(ldsVolume.items.length);
   ldsVolume.items.forEach((doc, docIndex) => {
     let mbDoc = mormonsBookVolume.docs[docIndex];
-    let paraIndex = -1;
-    let paraWords: Match[];
-    let searchStart: number;
-    let nextPara = () => {
-      paraWords = noPunc(mbDoc.paragraphs[++paraIndex]);
-      console.log('MBO paragraph: ', joinWords(paraWords));
-      searchStart = 0;
-    };
-    nextPara();
+    // First, go all modern.
+    mbDoc.paragraphs = mbDoc.paragraphs.map(para => updateLanguage(para));
+    // Get all paragraphs into a single word list.
+    let mbDocParaWordLists = mbDoc.paragraphs.map(para => noPunc(para));
+    let mbDocWords: ParaMatch[] = [];
+    mbDocParaWordLists.forEach((paraWords, paraIndex) => {
+      mbDocWords.push(...paraWords.map(word => ({paraIndex, ...word})));
+    });
+    console.log('---- next volume!');
+    let searchStart = 0;
+    let badCount = 0;
     doc.chapters!.forEach(chapter => {
       chapter.paragraphs.forEach(paragraph => {
         // Each verse in its own paragraph from lds.org.
         let verse = paragraph.verses[0];
         let verseWords = noPunc(verse.text);
-        console.log('LDS verse: ', joinWords(verseWords));
-        let end: number | undefined;
-        for (; paraIndex < mbDoc.paragraphs.length; nextPara()) {
-          end = matchWords(verseWords, paraWords, searchStart);
+        console.log(`LDS verse (search from ${searchStart}): `, verse.text);
+        while (searchStart < mbDocWords.length) {
+          let end = matchWords(verseWords, mbDocWords, searchStart);
+          let mbDocWord = mbDocWords[searchStart];
+          let {paraIndex} = mbDocWord;
           if (end) {
-            console.log('Yea!');
+            let begin = mbDocWord.index;
+            console.log(`Match from ${begin} to ${end} in para ${paraIndex}!`);
+            let paraLast =
+              mbDocWords[searchStart + verseWords.length - 1].paraIndex;
+            for (; paraIndex < paraLast; ++paraIndex) {
+              // This verse spans paragraphs!
+              console.log(mbDoc.paragraphs[paraIndex].slice(begin));
+              begin = 0;
+            }
+            // TODO Look ahead for ending punctuation.
+            console.log(mbDoc.paragraphs[paraIndex].slice(begin, end));
+            searchStart += verseWords.length;
             break;
+          } else {
+            ++badCount;
+            console.log(
+              `Nothing in para ${paraIndex} starting from ${searchStart}`,
+            );
+            console.log('LDS:', joinWords(verseWords));
+            console.log('MBO:', joinWords(mbDocWords.slice(
+              searchStart, searchStart + verseWords.length,
+            )));
+            if (badCount > 10) {
+              die();
+            }
+            // Skip to the next paragraph or event document.
+            searchStart = mbDocWords.slice(searchStart).findIndex(
+              word => word.paraIndex > paraIndex,
+            ) + searchStart;
+            console.log(`Now at ${searchStart}!`);
+            if (searchStart < 0) {
+              searchStart = mbDocWords.length;
+              console.log(`Nope, I meant ${searchStart}!`);
+            }
           }
-        }
-        if (end) {
-          let begin = paraWords[searchStart].index;
-          console.log(`Match from ${begin} to ${end} in para ${paraIndex}!`);
-          console.log(mbDoc.paragraphs[paraIndex].slice(begin, end));
-          searchStart += verseWords.length;
         }
       });
       // Chapter over.
-      die();
+      // die();
     });
   });
 }
@@ -79,7 +112,17 @@ function noPunc(text: string) {
     if (!match) {
       break;
     }
-    matches.push({index: match.index, token: match[0]});
+    matches.push({index: match.index, token: match[0].toLowerCase()});
   }
   return matches;
+}
+
+function updateLanguage(text: string) {
+  text = text.replace(/first-born/g, 'firstborn');
+  text = text.replace(/three score/g, 'threescore');
+  text = text.replace(/comfortedest/g, 'comfortedst');
+  text = text.replace(/pleaded/g, 'pled');
+  text = text.replace(/(they|he) plead with/g, '$1 pled with');
+  text = text.replace(/peoples'/g, "people's");
+  return text;
 }
