@@ -71,6 +71,7 @@ async function buildMerge() {
     let searchStart = 0;
     let badCount = 0;
     let mboChapters: Chapter[] = [];
+    let lastParaIndex = -1;
     doc.chapters!.forEach(chapter => {
       let mboParas: Paragraph[] = [];
       let mboPara: Paragraph = {size: 0, verses: []};
@@ -85,9 +86,10 @@ async function buildMerge() {
         let verse = paragraph.verses[0];
         let verseWords = noPunc(verse.text);
         let addMboVerse = (text: string, paraIndex: number) => {
-          let currentParaIndex = mboParas.length;
-          if (paraIndex > currentParaIndex) {
+          if (paraIndex > lastParaIndex) {
+            console.log(`Was at ${lastParaIndex}, going to ${paraIndex}`);
             addMboPara();
+            lastParaIndex = paraIndex;
           }
           console.log('add verse', text);
           mboPara.verses.push({number: verse.number, text});
@@ -102,14 +104,24 @@ async function buildMerge() {
             console.log(`Match from ${begin} to ${end} in para ${paraIndex}!`);
             let paraLast =
               mbDocWords[searchStart + verseWords.length - 1].paraIndex;
+            // Get text for processing.
+            let mbDocPara = mbDoc.paragraphs[paraIndex];
+            // Look behind for starting punctuation.
+            let reverse =
+              mbDocPara.slice(0, begin).split('').reverse().join('');
+            let spaceBack = reverse.search(/\s|$/);
+            if (spaceBack > 0) {
+              console.log(`Found back ${spaceBack} extra in: '${reverse}'`);
+              begin -= spaceBack;
+            }
+            // Check for multipara verses.
             for (; paraIndex < paraLast; ++paraIndex) {
               // This verse spans paragraphs!
               addMboVerse(mbDoc.paragraphs[paraIndex].slice(begin), paraIndex);
               begin = 0;
             }
             // Look ahead for ending punctuation.
-            let mbDocPara = mbDoc.paragraphs[paraIndex];
-            let spaceIndex = mbDocPara.slice(begin).search(/\s/);
+            let spaceIndex = mbDocPara.slice(end).search(/\s|$/);
             if (spaceIndex > 0) {
               end += spaceIndex;
             }
