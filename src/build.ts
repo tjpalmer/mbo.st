@@ -23,7 +23,10 @@ async function build() {
   }
   // Calculate sizes, and write files as we go.
   volume.size = sum(volume.items.map((doc, docIndex) => {
-    doc.name = `${docIndex < 10 ? '0' : ''}${docIndex + 1}-${doc.name}`;
+    // Numbering preserves order, and leaving 0 for front matter better matches
+    // WEB's KJV numbering.
+    let docNumber = docIndex + 1;
+    doc.name = `${docNumber < 10 ? '0' : ''}${docNumber}-${doc.name}`;
     let docDir = join(docsDir, doc.name);
     if (!existsSync(docDir)) {
       mkdirSync(docDir);
@@ -104,12 +107,13 @@ async function buildMerge() {
             console.log(`Match from ${begin} to ${end} in para ${paraIndex}!`);
             let paraLast =
               mbDocWords[searchStart + verseWords.length - 1].paraIndex;
-            // Get text for processing.
-            let mbDocPara = mbDoc.paragraphs[paraIndex];
             // Look behind for starting punctuation.
+            let mbDocPara = mbDoc.paragraphs[paraIndex];
             let reverse =
               mbDocPara.slice(0, begin).split('').reverse().join('');
-            let spaceBack = reverse.search(/\s|$/);
+            // Don't pick up emdashes going backward.
+            // These can span verses and cause trouble.
+            let spaceBack = reverse.search(/\u2014|\s|\w|$/);
             if (spaceBack > 0) {
               console.log(`Found back ${spaceBack} extra in: '${reverse}'`);
               begin -= spaceBack;
@@ -120,8 +124,9 @@ async function buildMerge() {
               addMboVerse(mbDoc.paragraphs[paraIndex].slice(begin), paraIndex);
               begin = 0;
             }
-            // Look ahead for ending punctuation.
-            let spaceIndex = mbDocPara.slice(end).search(/\s|$/);
+            // Look forward for ending punctuation.
+            mbDocPara = mbDoc.paragraphs[paraIndex];
+            let spaceIndex = mbDocPara.slice(end).search(/\s|\w|$/);
             if (spaceIndex > 0) {
               end += spaceIndex;
             }
@@ -216,11 +221,23 @@ function sum(numbers: Iterable<number>) {
 }
 
 function updateLanguage(text: string) {
+  // Align with fresh lds.org text.
   text = text.replace(/first-born/g, 'firstborn');
   text = text.replace(/three score/g, 'threescore');
   text = text.replace(/comfortedest/g, 'comfortedst');
   text = text.replace(/pleaded/g, 'pled');
   text = text.replace(/(they|he) plead with/g, '$1 pled with');
   text = text.replace(/peoples'/g, "people's");
+  // Other fixes to mbo ascii punctuation.
+  // Emdash.
+  text = text.replace(/\{}---\{}/g, '\u2014');
+  // Double quotation marks first.
+  text = text.replace(/"(\w|[`])/g, '\u201c$1');
+  text = text.replace(/(\w|[,.'\u2014])"/g, '$1\u201d');
+  // And try to get apostrophes before single right quotes.
+  text = text.replace(/(\w)'(\w)/g, '$1\u02bc$2');
+  // Then single quotation marks.
+  text = text.replace(/`/g, '\u2018');
+  text = text.replace(/'/g, '\u2019');
   return text;
 }
